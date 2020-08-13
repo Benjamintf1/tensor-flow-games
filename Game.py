@@ -1,111 +1,136 @@
-import Cards
-
+import Company
+from functools import reduce
+from collections import Counter
 class Player:
     def __init__(self, bot, industry, country):
         self.bot = bot
         self.industry = industry
         self.country = country
         self.zeroBids = []
-        self.cards = []
+        self.companies = []
+        self.currentBids = []
         self.totalBids = 0
         self.peaked = False
 
-def PlayGame(bots):
-    (deck, industries, countries) = Cards.getShuffledDecks(len(bots))
-    
-    players = []
-    for num, bot in enumerate(bots):
-        contructedBot = bot(num, countries[:len(bots)], industries[num])
-        players.append(Player(contructedBot, industries[num], countries[num]))
-    for gameRound in range(int(len(deck)/len(players))):
-        for impulse in range(len(players)):
-            card = deck.pop()
-            blindBid = players[impulse].bot.bid(card, 0, gameRound, impulse, [True]*len(players))
-            if blindBid <= 0:
-                blindBid = 9001
-            (winner, bid, zeroes) = doImpulse(players, blindBid, card, gameRound, impulse, [], 3)
-            recordBids(players, card, winner, bid, zeroes, gameRound, impulse)
-            
-    if len(players) == 3:
-        card = deck.pop()
-        (winner, bid, zeroes) = doImpulse(players, 0, card, 0, 4, [], 3)
-        recordBids(players, card, winner, bid, [False]*3, gameRound, impulse)
-    return getScore(players)
+    def bid(self, company, blindBid):
+        bid = self.bot.bid(company, blindBid)
+        if bid == blindBid or bid < 0:
+            bid = 0
+        self.currentBids.append(bid)
+        return bid
 
-def getScore(players):
-    scores = []
-    totalSpent = list(map(lambda x: x.totalBids, players))
-    minBids = min(totalSpent)
-    maxBids = max(totalSpent)
-    for num, player in enumerate(players):
-        if player.totalBids == maxBids:
-            scores.append(-5 + num)
-        else:
-            score = 0
-            if player.totalBids == minBids:
-                if len(players) == 5:
-                    score = score + 7
-                else:
-                    score = score + 6
-            score = score + sum(player.zeroBids)
-            cardScore = Cards.calculateCardScore(player.cards, player.industry, player.country, len(players))
-            scores.append(score)
-    return scores, totalSpent
+    def currentBids(self):
+        return currentBids
 
-def recordBids(players, card, winner, bid, zeroes, gameRound, impulse):
-    for num, player in enumerate(players):
-        if num == winner:
-            player.bot.results(winner, bid, zeroes)
-            player.cards.append(card)
-            player.totalBids = player.totalBids + bid
-        elif num == impulse:
-            player.bot.results(winner, bid, zeroes)
-        else:
-            peak = player.bot.results(winner, -1, zeroes)
-            if peak == True and player.peaked != True and len(players) == 5:
-                player.bot.results(winner, bid, zeroes)
-                player.peaked = True
-        if zeroes[num] and len(players) != 3:
-            player.zeroBids.insert(2, gameRound)
+    def latestBid(self):
+        return self.currentBids[-1]
 
-# show auctioneer all bids...woops           
-def doImpulse(players, blindBid, card, gameRound, impulse, previousBids, count):
-    bids = Bid(players, card, blindBid, gameRound, impulse,[True]*len(players), [False]*len(players))
-    maxBid = max(bids)
-    maxBids = list(map(lambda x: x == maxBid, bids))
-    zeroBids = list(map(lambda x: x == 0, bids))
-    if maxBids.count(True) > 1:
-        if count == 1:
-            allBids = bids + previousBids
-            maxBid = max(allBids)
-            maxBids = list(map(lambda x: x == maxBid, allBids))
-            while maxBids.count(True) > 1:
-                allBids = list(filter(lambda x: x != maxBid, allBids))
-                maxBid = max(allBids)
-                maxBids = list(map(lambda x: x == maxBid, allBids))
-            return (bids + previousBids).index(maxBid) % len(players)    
-        else:
-            return doImpulse(players, blindBid, card, gameRound, impulse, bids+previousBids, count-1)
-    else:
-        return bids.index(maxBid), maxBid, zeroBids
+    def resetBid(self):
+        self.currentBids = []
 
-def Bid(players, card, blindBid, gameRound, impulse, remaining, zeroes):
-    bids = []
+    def awardCompany(self, company, bid):
+        self.companies.append(company)
+        self.totalBids = self.totalBids + bid
 
-    for num, player in enumerate(players):
+class Game:
+    def __init__(self, bots):
+        (companies, industries, countries) = Company.getShuffledDecks(len(bots))
+        self.companies = companies
+        players = []
+        for num, bot in enumerate(bots):
+            contructedBot = bot(num, countries[:len(bots)], industries[num])
+            players.append(Player(contructedBot, industries[num], countries[num]))
+        self.players = players
+        self.numRounds = int(len(self.companies)/len(self.players))
+
+    def numPlayers(self):
+        return len(self.players)
+
+    def getNextCompany(self):
+        return self.companies.pop()
+
+
+    def Play(self):
+        for gameRound in range(self.numRounds):
+            self.gameRound = gameRound
+            for impulse in range(len(self.players)):
+                self.impulse = impulse
+                self.performAuction()
+                self.resetBids()
+                
+        if len(self.players) == 3:
+            self.performBlindAuction()
+
+        return self.calculateScore()
+
+    def getAuctioneer(self):
+        return self.players[self.impulse]
+
+    def getBidders(self):
+        return list(filter(lambda x: x != self.getAuctioneer(), self.players))
         
-        if remaining[num]:
-            if num == impulse:
-                bids.append(blindBid)
-            else:
-                bid = players[num].bot.bid(card, blindBid, gameRound, impulse, remaining)
-                if bid == blindBid:
-                    bid = 0
-                bids.append(bid)
+    def resetBids(self):
+        for player in self.players:
+            player.resetBid()
+
+    def performAuction(self):
+        company = self.getNextCompany()
+        auctioneer = self.getAuctioneer()
+        blindBid = auctioneer.bid(company, -1)
+        if blindBid <= 0:
+            blindBid = 9001
+        (winner, bid) = self.performBidding(self.getBidders(), blindBid, company)
+        if winner == None:
+            auctioneer.awardCompany(company, blindBid)
         else:
-            if zeroes[num]:
-                bids.append(0)
+            winner.awardCompany(company, bid)
+
+    def performBlindAuction(self):
+        company = self.getNextCompany()
+        (winner, bid) = self.performBidding(self.players, 0, company)
+        if winner != None:
+            winner.awardCompany(company, bid)
+
+    def performBidding(self, players, blindBid, company):
+        playersToRebid = players
+        for x in range(0,3):
+            self.Bid(playersToRebid, company, blindBid)
+            maxBid = max(map(lambda x: x.latestBid(), players))
+            playersToRebid = list(filter(lambda x: x.latestBid() == maxBid, players))
+            if len(playersToRebid) == 1:
+                return (playersToRebid[0], maxBid)
+        bids = reduce(lambda x,y: x.append(y), map(lambda x: x.currentBids(),players))
+        uniqueBids = list(filter(lambda x: x != 1, Counter(bids)))
+        if len(uniqueBids) == 0:
+            return (None, None)
+        maxBid = max(uniqueBids)
+        winningPlayer = list(filter(lambda x: maxBid in x.currentBids(), players))
+        if len(winningPlayer) == 0:
+            return (None, None)
+        return (winningPlayer, maxBid)
+
+    def Bid(self, players, company, blindBid):
+        bids = []
+        for player in players:
+            player.bid(company, blindBid)
+    
+    def calculateScore(self):
+        scores = []
+        totalSpent = list(map(lambda x: x.totalBids, self.players))
+        minBids = min(totalSpent)
+        maxBids = max(totalSpent)
+        for player in self.players:
+            if player.totalBids == maxBids:
+                scores.append(-5)
             else:
-                bids.append(-1)
-    return bids
+                score = 0
+                if player.totalBids == minBids:
+                    if len(self.players) == 5:
+                        score = score + 7
+                    else:
+                        score = score + 6
+                score = score + sum(player.zeroBids)
+                cardScore = Company.calculateCompanyScore(player.companies, player.industry, player.country, len(self.players))
+                scores.append(score)
+        return scores, totalSpent
 

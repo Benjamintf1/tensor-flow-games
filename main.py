@@ -1,4 +1,4 @@
 import ExamplePlayer
 import Game
 
-print(Game.PlayGame([ExamplePlayer.Player]*3))
+print(Game.Game([ExamplePlayer.Player]*3).Play())
