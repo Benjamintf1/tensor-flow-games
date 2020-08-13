@@ -6,7 +6,6 @@ class Player:
         self.bot = bot
         self.industry = industry
         self.country = country
-        self.zeroBids = []
         self.companies = []
         self.currentBids = []
         self.totalBids = 0
@@ -143,6 +142,7 @@ class Game:
         peakedBid = player.peakedBid
         currentBidders = list(map(lambda x: self.players.index(x), players))
         return GameState(playerIndex, blindBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peakedBid, currentBidders)
+
     def getZeroBids(self):
         zeroBids = {}
         for auction in self.bids.items():
@@ -168,8 +168,13 @@ class Game:
                         score = score + 7
                     else:
                         score = score + 6
-                score = score + sum(player.zeroBids)
-                cardScore = Company.calculateCompanyScore(player.companies, player.industry, player.country, len(self.players))
+                if len(self.players) != 3:
+                    zeroBids = self.getZeroBids()
+                    zeroBidRounds = []
+                    for zeroBid in filter(lambda x: x[0][2] == playerIndex, zeroBids):
+                        zeroBidRounds.insert(zeroBid[0][0], 2)
+                    score = score + sum(zeroBidRounds)
+                score = score + Company.calculateCompanyScore(player.companies, player.industry, player.country, len(self.players))
                 scores.append(score)
         return scores, totalSpent
 
