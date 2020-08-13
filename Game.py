@@ -9,6 +9,7 @@ class Player:
         self.cards = []
         self.totalBids = 0
         self.peaked = False
+
 def PlayGame(bots):
     (deck, industries, countries) = Cards.getShuffledDecks(len(bots))
     
