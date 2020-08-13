@@ -138,11 +138,20 @@ class Game:
         auctioneerBids = list(filter(lambda x: x[0][1] == playerIndex, self.bids.items()))
         seenCompanies = self.seenCompanies
         winners = self.winners
-        #TODO: zero bids
+        zeroBids = self.getZeroBids()
         zeroBids = []
         peakedBid = player.peakedBid
         currentBidders = list(map(lambda x: self.players.index(x), players))
         return GameState(playerIndex, blindBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peakedBid, currentBidders)
+    def getZeroBids(self):
+        zeroBids = {}
+        for auction in self.bids.items():
+            gameRound = auction[0][0]
+            impulse = auction[0][1]
+            for index, bids in enumerate(auction[1]):
+                if bids[-1] == 0:
+                    zeroBids[(gameRound, impulse, index)] = True
+        return zeroBids
 
     def calculateScore(self):
         scores = []
