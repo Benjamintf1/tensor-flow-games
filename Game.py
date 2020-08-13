@@ -9,14 +9,14 @@ class Player:
         self.companies = []
         self.currentBids = []
         self.totalBids = 0
-        self.peakedBid = None
+        self.peekedBid = None
 
     def bid(self, gameState):
-        blindBid = gameState.blindBid
-        bid = self.bot.bid(None)
-        if blindBid == 0 and bid <= 0:
+        openBid = gameState.openBid
+        bid = self.bot.bid(gameState)
+        if openBid == 0 and bid <= 0:
             bid = 9001
-        elif bid == blindBid or bid < 0:
+        elif bid == openBid or bid < 0:
             bid = 0
         self.currentBids.append(bid)
         return bid
@@ -51,6 +51,8 @@ class Game:
                 self.resetBids()
                 
         if len(self.players) == 3:
+            self.impulse = -1
+            self.gameRound = -1
             self.performBlindAuction()
 
         #TODO: tiebreakers
@@ -64,6 +66,7 @@ class Game:
 
     def setupGame(self):
         self.players = []
+        self.openBids = []
         self.bids = {}
         self.seenCompanies = []
         self.winners = []
@@ -88,14 +91,21 @@ class Game:
         self.seenCompanies.append(company)
         auctioneer = self.getAuctioneer()
         state = self.getGameStateForPlayer(auctioneer, self.players, 0)
-        blindBid = auctioneer.bid(state)
-        (winner, bid) = self.performBidding(self.getBidders(), blindBid, company)
+        openBid = auctioneer.bid(state)
+        self.openBids.append(openBid)
+        (winner, bid) = self.performBidding(self.getBidders(), openBid, company)
         if winner == None:
             winner = auctioneer
-            bid = blindBid
+            bid = openBid
         winner.awardCompany(company, bid)
         self.winners.append(self.players.index(winner))
         self.bids[(self.gameRound, self.impulse)] = list(map(lambda x: x.currentBids, self.players))
+        if self.numPlayers() == 5:
+            for player in self.players:
+                if player != auctioneer and player != winner and winner != auctioneer and player.peekedBid == None:
+                    peek = player.bot.peek(self.getGameStateForPlayer(player, [winner], -1))
+                    if peek:
+                        player.peekedBid = (self.gameRound, self.impulse, bid)
 
     def performBlindAuction(self):
         company = self.getNextCompany()
@@ -103,10 +113,10 @@ class Game:
         if winner != None:
             winner.awardCompany(company, bid)
 
-    def performBidding(self, players, blindBid, company):
+    def performBidding(self, players, openBid, company):
         playersToRebid = players
         for x in range(0,3):
-            self.Bid(playersToRebid, company, blindBid)
+            self.Bid(playersToRebid, company, openBid)
             maxBid = max(map(lambda x: x.latestBid(), players))
             playersToRebid = list(filter(lambda x: x.latestBid() == maxBid, players))
             if len(playersToRebid) == 1:
@@ -123,13 +133,13 @@ class Game:
         return (winningPlayer[0], maxBid)
 
 
-    def Bid(self, players, company, blindBid):
+    def Bid(self, players, company, openBid):
         bids = []
         for player in players:
-            state = self.getGameStateForPlayer(player, players, blindBid)
+            state = self.getGameStateForPlayer(player, players, openBid)
             player.bid(state)
 
-    def getGameStateForPlayer(self, player, players, blindBid):
+    def getGameStateForPlayer(self, player, players, openBid):
         playerIndex = self.players.index(player)
         totalBids = player.totalBids
         countries = self.countries
@@ -139,9 +149,9 @@ class Game:
         winners = self.winners
         zeroBids = self.getZeroBids()
         zeroBids = []
-        peakedBid = player.peakedBid
+        peekedBid = player.peekedBid
         currentBidders = list(map(lambda x: self.players.index(x), players))
-        return GameState(playerIndex, blindBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peakedBid, currentBidders)
+        return GameState(playerIndex, openBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peekedBid, currentBidders, self.impulse, self.gameRound, self.openBids)
 
     def getZeroBids(self):
         zeroBids = {}
@@ -171,7 +181,8 @@ class Game:
                 if len(self.players) != 3:
                     zeroBids = self.getZeroBids()
                     zeroBidRounds = []
-                    for zeroBid in filter(lambda x: x[0][2] == playerIndex, zeroBids):
+                    playerIndex = self.players.index(player)
+                    for zeroBid in filter(lambda x: x[0][2] == playerIndex, zeroBids.items()):
                         zeroBidRounds.insert(zeroBid[0][0], 2)
                     score = score + sum(zeroBidRounds)
                 score = score + Company.calculateCompanyScore(player.companies, player.industry, player.country, len(self.players))
@@ -179,9 +190,10 @@ class Game:
         return scores, totalSpent
 
 class GameState:
-    def __init__(self, playerIndex, blindBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peakedBid, currentBidders): 
+    def __init__(self, playerIndex, openBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peekedBid, currentBidders, impulse, gameRound, openBids): 
         #TODO: ensure not mutatable by bots
-        self.blindBid = blindBid
+        self.openBid = openBid
+        self.openBids = openBids
         self.playerIndex = playerIndex
         self.country = countries[playerIndex]
         self.industry = industry
@@ -193,5 +205,7 @@ class GameState:
         self.auctioneerBids = auctioneerBids
         self.numPlayers = len(countries)
         self.zeroBids = zeroBids
-        self.peakedBid = peakedBid
+        self.peekedBid = peekedBid
         self.currentBidders = currentBidders
+        self.gameRound = impulse
+        self.impulse = impulse

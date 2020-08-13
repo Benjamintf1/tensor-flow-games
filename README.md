@@ -1,0 +1,1 @@
+QE is a board game. For a description of the board game, feel free to read the rules/description [here](https://www.ultraboardgames.com/qe/game-rules.php). The goal of this project is to allow people to compete against each other with bots written to try and win the game. 
