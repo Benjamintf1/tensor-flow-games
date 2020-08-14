@@ -11,4 +11,5 @@ To make a bot you have to implement three functions.
 ## How to run game with example bot
 
 Run `python3 main.py <number of players>` to run the bot with the ExamplePlayer.py, or a modified ExamplePlayer.py player to see that it functions correctly.
+The example player will show the game state available on standard out, and then the game will show the points earned by each player, and the total amount bid by each player.
 
