@@ -1,6 +1,7 @@
 import Company
 from functools import reduce
 from collections import Counter
+import copy
 class Player:
     def __init__(self, bot, industry, country):
         self.bot = bot
@@ -191,21 +192,20 @@ class Game:
 
 class GameState:
     def __init__(self, playerIndex, openBid, totalBids, countries, industry, auctioneerBids, seenCompanies, winners, zeroBids, peekedBid, currentBidders, impulse, gameRound, openBids): 
-        #TODO: ensure not mutatable by bots
-        self.openBid = openBid
-        self.openBids = openBids
-        self.playerIndex = playerIndex
-        self.country = countries[playerIndex]
-        self.industry = industry
-        self.countries = countries
-        self.seenCompanies = seenCompanies
-        self.biddingOn = seenCompanies[-1]
-        self.winners = winners
-        self.totalBids = totalBids
-        self.auctioneerBids = auctioneerBids
-        self.numPlayers = len(countries)
-        self.zeroBids = zeroBids
-        self.peekedBid = peekedBid
-        self.currentBidders = currentBidders
-        self.gameRound = impulse
-        self.impulse = impulse
+        self.openBid = copy.deepcopy(openBid)
+        self.openBids = copy.deepcopy(openBids)
+        self.playerIndex = copy.deepcopy(playerIndex)
+        self.country = copy.deepcopy(countries[playerIndex])
+        self.industry = copy.deepcopy(industry)
+        self.countries = copy.deepcopy(countries)
+        self.seenCompanies = copy.deepcopy(seenCompanies)
+        self.biddingOn = copy.deepcopy(seenCompanies[-1])
+        self.winners = copy.deepcopy(winners)
+        self.totalBids = copy.deepcopy(totalBids)
+        self.auctioneerBids = copy.deepcopy(auctioneerBids)
+        self.numPlayers = copy.deepcopy(len(countries))
+        self.zeroBids = copy.deepcopy(zeroBids)
+        self.peekedBid = copy.deepcopy(peekedBid)
+        self.currentBidders = copy.deepcopy(currentBidders)
+        self.gameRound = copy.deepcopy(gameRound)
+        self.impulse = copy.deepcopy(impulse)
