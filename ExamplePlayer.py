@@ -4,7 +4,7 @@ class Player:
         self.printedOnce = False
 
     def bid(self, gameState):
-        if not self.printedOnce and gameState.playerIndex == 0: 
+        if not self.printedOnce and gameState.playerIndex == 0 and gameState.gameRound == 2: 
             #these are all the pieces of data in use
             print("the impulse, or whos turn it is to be the auctioneer. -1 if in bonus round(only 3 players)")
             print(gameState.impulse)
@@ -62,6 +62,7 @@ class Player:
         return random.randint(1,3) # what you bid
     
     def peek(self, gameState):
-        print("this function is only called in 5 player games. return true if you wish to peek at the winning bid. Will be placed in peeked bid.")
+        if gameState.playerIndex == 0:
+            print("this function is only called in 5 player games. return true if you wish to peek at the winning bid. Will be placed in peeked bid.")
         return True
 
