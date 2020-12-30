@@ -18,9 +18,9 @@ class Game:
             self.player1moves[i] = rps1
             self.player2moves[i] = rps2
 
-        self.player1.Score(self.getScore(self.player1moves, self.player2moves))
-        self.player2.Score(self.getScore(self.player2moves, self.player1moves))
-        return self.getScore(self.player1moves, self.player2moves)
+        self.player1.Score(self.getScore(self.player1moves, self.player2moves), self.player1moves, self.player2moves)
+        self.player2.Score(self.getScore(self.player2moves, self.player1moves), self.player2moves, self.player1moves)
+        return self.getScore(self.player2moves, self.player1moves), self.player2moves, self.player1moves
 
     def getScore(self, moves1, moves2):
         winner1 = 0
@@ -45,25 +45,39 @@ class Game:
                 print("THIS SHOULDN'T HAPPEN I THINK")
         return winner1 - winner2
 
-class AlwaysRock:
+class AlwaysPaper:
     def __init__(self):
         return
     def Shoot(self, thing, thang):
-        return ROCK
-    def Score(self, score):
+        return PAPER
+    def Score(self, score, myMoves, theirMoves):
         return 
 class TensorPlayer:
     def __init__(self):
+        self.model = tf.keras.Sequential()
+        self.model.add(tf.keras.layers.Dense(20, activation="relu", name="layer1", input_shape=(20,)))
+        self.model.add(tf.keras.layers.Dense(20, activation="relu", name="layer2"))
+        self.model.add(tf.keras.layers.Dense(1, activation="relu", name="output"))
+        self.model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy']) 
+        print("done")       
+        self.games = []
+        self.scores = []
         return
-    def Shoot(self, thing, thang):
-        return ROCK
-    def Score(self, score):
+    def Shoot(self, myMoves, theirMoves):
+        predict = self.model.predict([myMoves + theirMoves])
+        print(predict)
+        return int(predict[0][0]*100 % 3) + 1
+    def Score(self, score, myMoves, theirMoves):
+        self.games.append(myMoves + theirMoves)
+        self.scores.append(score)
+        self.model.fit(self.games, self.scores, epochs=150,batch_size=10)
         return 
         
 
-Player1 = AlwaysRock()
+Player1 = AlwaysPaper()
 Player2 = TensorPlayer()
 
 game = Game(Player1, Player2)
-
+print(game.doGame())
+print(game.doGame())
 print(game.doGame())
