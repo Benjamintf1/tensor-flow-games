@@ -37,6 +37,12 @@ class Game:
                 self.turn = self.turn % 4 + 1
         self.players[winOrder[0] - 1].wins[winOrder[0] - 1] += 1
         self.players[winOrder[0] - 1].wins[4] += 1
+        self.players[winOrder[0] - 1].score[winOrder[0] - 1] += 10
+        self.players[winOrder[0] - 1].score[4] += 10
+        self.players[winOrder[1] - 1].score[winOrder[1] - 1] += 7
+        self.players[winOrder[1] - 1].score[4] += 7
+        self.players[winOrder[2] - 1].score[winOrder[2] - 1] += 5
+        self.players[winOrder[2] - 1].score[4] += 5
 
 
     def MovablePawns(self):
@@ -107,6 +113,7 @@ class Pawn:
 
 class Cheater():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -123,6 +130,7 @@ class Cheater():
 
 class PrisonCaptureSafeClosest():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -153,6 +161,7 @@ class PrisonCaptureSafeClosest():
 
 class PrisonCaptureSafeAlsoSafeFurthest():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -188,6 +197,7 @@ class PrisonCaptureSafeAlsoSafeFurthest():
 
 class PrisonCaptureSafeFurthest():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -218,6 +228,7 @@ class PrisonCaptureSafeFurthest():
 
 class BadPlayer():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -241,6 +252,7 @@ class BadPlayer():
 
 class MoveSafe():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -264,6 +276,7 @@ class MoveSafe():
 
 class MovePrisonThenFurthest():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -283,6 +296,7 @@ class MovePrisonThenFurthest():
 
 class MoveFurthestPawn():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -299,6 +313,7 @@ class MoveFurthestPawn():
 
 class MoveClosestPawn():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -314,6 +329,7 @@ class MoveClosestPawn():
 
 class MoveRandomPawn():
     wins = [0,0,0,0,0]
+    score = [0,0,0,0,0]
     numCaptured = [0,0,0,0,0]
     spacesCaptured = [0,0,0,0,0]
     numGames = 0
@@ -338,6 +354,7 @@ playerTypes.sort(key=lambda player: player.wins[4])
 for player in playerTypes:
     player.PrintName()
     print(f'wins: {player.wins}')
+    print(f'score: {player.score}')
     print(f'num games: {player.numGames}')
     print(f'num captured: {player.numCaptured}')
     print(f'spaces captured: {player.spacesCaptured}')
