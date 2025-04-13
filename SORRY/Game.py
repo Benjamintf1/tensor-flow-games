@@ -2,21 +2,26 @@ import random
 from functools import reduce
 from collections import Counter
 from operator import add
+from tqdm import tqdm
+
 class Game:
     def __init__(self, player1, player2, player3, player4):
         self.players = [player1, player2, player3, player4]
 
 
     def Play(self):
+        winOrder = []
+        for p in self.players:
+            p.numGames += 1
         self.pawns = [ Pawn(1), Pawn(1), Pawn(1), Pawn(1), Pawn(2), Pawn(2), Pawn(2), Pawn(2), Pawn(3), Pawn(3), Pawn(3), Pawn(3), Pawn(4), Pawn(4), Pawn(4), Pawn(4) ]
         self.turn = 1
 
         while not self.IsDone():
+            goAgain = False
             # need to implement play again if capture and if 6 move
             self.roll = random.randint(1,6)
-            if self.PlayerDone():
-                self.turn = self.turn % 4 + 1
-                continue
+            if self.roll == 6:
+                goAgain = True
 
             MovablePawns = self.MovablePawns()
             if len(MovablePawns) > 0:
@@ -24,14 +29,14 @@ class Game:
                 movedPawn = MovablePawns[index]
                 movedPawn.MovePawn(self.roll)
                 captured = self.CapturePawns(movedPawn.location)
+                if captured:
+                    goAgain = True
                 if self.PlayerDone():
-                    self.players[self.turn - 1].wins[self.turn - 1] += 1
-                    self.players[self.turn - 1].wins[4] += 1
-                    return
-                if not captured and self.roll != 6 and not movedPawn.IsDone():
-                    self.turn = self.turn % 4 + 1
-            else:
+                    winOrder.append(self.turn)
+            if not goAgain or self.PlayerDone():
                 self.turn = self.turn % 4 + 1
+        self.players[winOrder[0] - 1].wins[winOrder[0] - 1] += 1
+        self.players[winOrder[0] - 1].wins[4] += 1
 
 
     def MovablePawns(self):
@@ -48,6 +53,10 @@ class Game:
         captured = False
         for pawn in self.OtherPawns():
             if pawn.location == location and location != -1 and location % 13 != 0 and location % 13 != 8:
+                self.players[pawn.playerNum -1].spacesCaptured[pawn.playerNum -1] += pawn.distance
+                self.players[pawn.playerNum -1].spacesCaptured[4] += pawn.distance
+                self.players[pawn.playerNum -1].numCaptured[pawn.playerNum -1] += 1
+                self.players[pawn.playerNum -1].numCaptured[4] += 1
                 pawn.Captured()
                 captured = True
         return captured
@@ -98,6 +107,9 @@ class Pawn:
 
 class Cheater():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -111,6 +123,9 @@ class Cheater():
 
 class PrisonCaptureSafeClosest():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -138,6 +153,9 @@ class PrisonCaptureSafeClosest():
 
 class PrisonCaptureSafeAlsoSafeFurthest():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -156,7 +174,7 @@ class PrisonCaptureSafeAlsoSafeFurthest():
             if len(moveSafe) > 0:
                 piece = max(moveSafe, key=lambda x: x.distance)
                 return pieces.index(piece)
-            canBeCaptured = [any((distance(o.location, x) <= 6 and o.playerNum != me) for o in otherPawns) for x in locations]
+            canBeCaptured = [any((o.location < x and o.location + 6 >= x and o.playerNum != me) for o in otherPawns) for x in locations]
             try:
                 first = canCapture.index(False)
                 return first
@@ -168,11 +186,11 @@ class PrisonCaptureSafeAlsoSafeFurthest():
     def PrintName(self):
         print('Prison, Capture, SafeSpace, NotCapturable, Furthest')
 
-def distance(a, b):
-    return min((a - b) % (13*4), (b - a) % (13*4))
-
 class PrisonCaptureSafeFurthest():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -200,6 +218,9 @@ class PrisonCaptureSafeFurthest():
 
 class BadPlayer():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -220,6 +241,9 @@ class BadPlayer():
 
 class MoveSafe():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -240,6 +264,9 @@ class MoveSafe():
 
 class MovePrisonThenFurthest():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -256,6 +283,9 @@ class MovePrisonThenFurthest():
 
 class MoveFurthestPawn():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -269,6 +299,9 @@ class MoveFurthestPawn():
 
 class MoveClosestPawn():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -281,6 +314,9 @@ class MoveClosestPawn():
 
 class MoveRandomPawn():
     wins = [0,0,0,0,0]
+    numCaptured = [0,0,0,0,0]
+    spacesCaptured = [0,0,0,0,0]
+    numGames = 0
     def __init__(self):
         pass
 
@@ -292,12 +328,16 @@ class MoveRandomPawn():
 
 # make all possible playsets?
 playerTypes = [MoveRandomPawn(), MoveFurthestPawn(), MovePrisonThenFurthest(), MoveClosestPawn(), MoveSafe(), BadPlayer(), PrisonCaptureSafeFurthest(), PrisonCaptureSafeClosest(), PrisonCaptureSafeAlsoSafeFurthest()]
-for i in range(100000):
-    g = Game(random.choice(playerTypes), random.choice(playerTypes), random.choice(playerTypes), random.choice(playerTypes))
-    for i in range(1):
-        g.Play()
+for i in tqdm(range(100)):
+    for i in range(100):
+        g = Game(random.choice(playerTypes), random.choice(playerTypes), random.choice(playerTypes), random.choice(playerTypes))
+        for i in range(1):
+            g.Play()
 
 playerTypes.sort(key=lambda player: player.wins[4])
 for player in playerTypes:
     player.PrintName()
     print(f'wins: {player.wins}')
+    print(f'num games: {player.numGames}')
+    print(f'num captured: {player.numCaptured}')
+    print(f'spaces captured: {player.spacesCaptured}')
